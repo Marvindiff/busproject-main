@@ -8,6 +8,13 @@
     <div class="py-8">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
 
+            {{-- Flash Success Message --}}
+            @if(session('success'))
+                <div class="bg-green-100 text-green-800 p-4 rounded mb-6 font-semibold">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             {{-- Booking Form --}}
             <div class="bg-white p-6 rounded shadow mb-10">
                 <h2 class="text-2xl font-semibold mb-6">Start Booking Here</h2>
@@ -47,39 +54,30 @@
                 </form>
             </div>
 
-            {{-- Flash Message --}}
-            @if(session('success'))
-            <div class="text-green-600 mb-6 font-semibold">
-                {{ session('success') }}
-            </div>
-            @endif
-
             {{-- Bookings List --}}
             <div>
                 <h2 class="text-2xl font-semibold mb-4">My Bookings</h2>
 
                 @forelse ($bookings as $booking)
-                <div class="p-4 bg-white rounded shadow mb-4">
-                    <p><strong>From:</strong> {{ $booking->origin }}</p>
-                    <p><strong>To:</strong> {{ $booking->destination }}</p>
-                    <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($booking->travel_date)->format('M d, Y') }}</p>
-                    <p><strong>Time:</strong> {{ \Carbon\Carbon::parse($booking->travel_time)->format('h:i A') }}</p>
+                    <div class="p-4 bg-white rounded shadow mb-4">
+                        <p><strong>From:</strong> {{ $booking->origin }}</p>
+                        <p><strong>To:</strong> {{ $booking->destination }}</p>
+                        <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($booking->travel_date)->format('M d, Y') }}</p>
+                        <p><strong>Time:</strong> {{ \Carbon\Carbon::parse($booking->travel_time)->format('h:i A') }}</p>
 
-                    <form method="POST" action="{{ route('bookings.destroy', $booking->id) }}" class="mt-3">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-1 rounded">
-                            Cancel
-                        </button>
-                    </form>
-                </div>
+                        <form method="POST" action="{{ route('bookings.destroy', $booking->id) }}" class="mt-3">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-1 rounded">
+                                Cancel
+                            </button>
+                        </form>
+                    </div>
                 @empty
-                <p class="text-gray-600">No bookings found.</p>
+                    <p class="text-gray-600">No bookings found.</p>
                 @endforelse
             </div>
 
         </div>
-
     </div>
-
 </x-app-layout>

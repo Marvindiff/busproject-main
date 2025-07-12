@@ -9,19 +9,18 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+   public function up()
 {
-    Schema::table('users', function (Blueprint $table) {
-        $table->string('role')->default('user'); // user | admin | super_admin
+    Schema::table('trips', function (Blueprint $table) {
+        $table->string('status')->default('approved'); // default to approved
     });
 }
-
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('trips', function (Blueprint $table) {
             //
         });
     }
