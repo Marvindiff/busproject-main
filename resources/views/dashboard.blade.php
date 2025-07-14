@@ -1,82 +1,68 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Welcome to Quantum Sky Bus') }}
-        </h2>
+        <div class="text-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Welcome to Quantum Sky Bus') }}
+            </h2>
+        </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-12">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             {{-- Flash Success Message --}}
             @if(session('success'))
-                <div class="bg-green-100 text-green-800 p-4 rounded mb-6 font-semibold">
+                <div class="bg-green-100 text-green-800 p-4 rounded font-semibold text-center">
                     {{ session('success') }}
                 </div>
             @endif
 
-            {{-- Booking Form --}}
-            <div class="bg-white p-6 rounded shadow mb-10">
-                <h2 class="text-2xl font-semibold mb-6">Start Booking Here</h2>
-
-                <form method="POST" action="{{ route('bookings.store') }}">
-                    @csrf
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label for="origin" class="block font-medium">Origin</label>
-                            <input type="text" name="origin" id="origin" class="w-full border rounded px-3 py-2 mt-1" required>
-                            @error('origin') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label for="destination" class="block font-medium">Destination</label>
-                            <input type="text" name="destination" id="destination" class="w-full border rounded px-3 py-2 mt-1" required>
-                            @error('destination') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label for="travel_date" class="block font-medium">Travel Date</label>
-                            <input type="date" name="travel_date" id="travel_date" class="w-full border rounded px-3 py-2 mt-1" min="{{ now()->toDateString() }}" required>
-                            @error('travel_date') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label for="travel_time" class="block font-medium">Travel Time</label>
-                            <input type="time" name="travel_time" id="travel_time" class="w-full border rounded px-3 py-2 mt-1" required>
-                            @error('travel_time') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-bold">
-                        Book Now
-                    </button>
-                </form>
+            {{-- Search Trips --}}
+            <div class="bg-white shadow-sm sm:rounded-lg p-6 text-center">
+                <h3 class="text-xl font-semibold mb-4">Ready to travel?</h3>
+                <a href="{{ route('trips.search') }}"
+                    class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded">
+                    Search Your Trips
+                </a>
             </div>
 
-            {{-- Bookings List --}}
-            <div>
-                <h2 class="text-2xl font-semibold mb-4">My Bookings</h2>
-
-                @forelse ($bookings as $booking)
-                    <div class="p-4 bg-white rounded shadow mb-4">
-                        <p><strong>From:</strong> {{ $booking->origin }}</p>
-                        <p><strong>To:</strong> {{ $booking->destination }}</p>
-                        <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($booking->travel_date)->format('M d, Y') }}</p>
-                        <p><strong>Time:</strong> {{ \Carbon\Carbon::parse($booking->travel_time)->format('h:i A') }}</p>
-
-                        <form method="POST" action="{{ route('bookings.destroy', $booking->id) }}" class="mt-3">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-1 rounded">
-                                Cancel
-                            </button>
-                        </form>
-                    </div>
-                @empty
-                    <p class="text-gray-600">No bookings found.</p>
-                @endforelse
+            {{-- My Bookings --}}
+            <div class="bg-white shadow-sm sm:rounded-lg p-6 text-center">
+                <h3 class="text-xl font-semibold mb-4">View your bookings!</h3>
+                <a href="{{ route('bookings.list') }}"
+                    class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded">
+                    My Bookings
+                </a>
             </div>
+
+            {{-- Show Available Trips --}}
+            @if($trips->count())
+                <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-xl font-semibold mb-6 text-center">Available Trips</h3>
+
+                    @foreach($trips as $trip)
+                        <div class="border p-4 rounded mb-4">
+                            <p><strong>From:</strong> {{ $trip->origin }}</p>
+                            <p><strong>To:</strong> {{ $trip->destination }}</p>
+                            <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($trip->travel_date)->format('M d, Y') }}</p>
+                            <p><strong>Time:</strong> {{ \Carbon\Carbon::parse($trip->travel_time)->format('h:i A') }}</p>
+                            <p><strong>Price:</strong> ₱{{ number_format($trip->price, 2) }}</p>
+                            <p><strong>Seats:</strong> {{ $trip->seats_available }}</p>
+
+
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-center text-gray-500">No trips available at the moment.</p>
+            @endif
+{{-- Show error message if form failed --}}
+@if(session('error_trip_id') == $trip->id)
+    <div class="bg-red-100 text-red-800 p-2 rounded mb-2 text-center font-semibold">
+        {{ session('error_message') }}
+    </div>
+@endif
+
 
         </div>
     </div>

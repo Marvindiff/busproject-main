@@ -12,13 +12,14 @@ return new class extends Migration
     public function up()
     {
         Schema::table('trips', function (Blueprint $table) {
-            if (!Schema::hasColumn('trips', 'price')) {
-                $table->decimal('price', 8, 2)->after('seat_capacity')->default(0);
-            }
+            $table->integer('seat_capacity')->default(30); // or nullable if needed
         });
     }
 
-    public function down(): void
+    /**
+     * Reverse the migrations.
+     */
+    public function down()
     {
         Schema::table('trips', function (Blueprint $table) {
             $table->dropColumn('seat_capacity');

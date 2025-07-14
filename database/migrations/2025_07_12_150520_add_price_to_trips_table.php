@@ -9,18 +9,19 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-public function up(): void
-{
-    Schema::table('trips', function (Blueprint $table) {
-        $table->decimal('price', 8, 2)->after('seat_capacity'); // adjust position if needed
-    });
-}
+    public function up()
+    {
+        Schema::table('trips', function (Blueprint $table) {
+            if (!Schema::hasColumn('trips', 'price')) {
+                $table->decimal('price', 8, 2)->after('seat_capacity')->default(0);
+            }
+        });
+    }
 
-public function down(): void
-{
-    Schema::table('trips', function (Blueprint $table) {
-        $table->dropColumn('price');
-    });
-}
-
+    public function down(): void
+    {
+        Schema::table('trips', function (Blueprint $table) {
+            $table->dropColumn('price');
+        });
+    }
 };
