@@ -19,15 +19,17 @@ class Booking extends Model
         'travel_date',
         'travel_time',
          'status',
+         'seat_number',
     ];
 
     public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+{
+    return $this->belongsTo(\App\Models\User::class);
+}
 
-    public function trip()
-    {
-        return $this->belongsTo(Trip::class);
-    }
+public function trip()
+{
+    return $this->belongsTo(\App\Models\Trip::class);
+}
+
 }

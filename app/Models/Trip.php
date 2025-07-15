@@ -18,10 +18,15 @@ class Trip extends Model
     'seat_capacity',
     'price',
     ];
-     public function bookings()
-    {
-        return $this->hasMany(Booking::class);
-    }
+    public function bookings()
+{
+    return $this->hasMany(\App\Models\Booking::class);
+}
+
+    public function approvedBookings()
+{
+    return $this->bookings()->where('status', 'approved');
+}
 
     public function seatsAvailable()
     {
@@ -30,6 +35,14 @@ class Trip extends Model
 
         return $this->seat_capacity - $bookedSeats;
     }
+    
+public function bookedSeatNumbers()
+{
+    return $this->bookings()
+        ->where('status', 'approved')
+        ->pluck('seat_number')
+        ->toArray();
+}
     public function getAvailableSeatsAttribute()
 {
     $bookedSeats = $this->bookings()->where('status', 'approved')->count();

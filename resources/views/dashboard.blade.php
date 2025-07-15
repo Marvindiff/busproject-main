@@ -17,6 +17,12 @@
                 </div>
             @endif
 
+            @if (session('status') === 'verification-link-sent')
+                <div class="text-green-600 text-center font-semibold mb-4">
+                    ✅ Email verified successfully!
+                </div>
+            @endif
+
             {{-- Search Trips --}}
             <div class="bg-white shadow-md sm:rounded-lg p-6 text-center">
                 <h3 class="text-2xl font-bold mb-4 text-gray-700">Ready to travel?</h3>
@@ -41,6 +47,12 @@
                     <h3 class="text-2xl font-bold mb-6 text-center text-gray-700">Available Trips</h3>
 
                     @foreach($trips as $trip)
+                        @php
+                            $availableSeats = $trip->seat_capacity - $trip->approved_bookings_count;
+                            $totalSeats = $trip->seat_capacity;
+                            $bookedSeats = $trip->bookedSeatNumbers();
+                        @endphp
+
                         <div class="border border-gray-200 rounded-lg p-5 mb-6 shadow-sm hover:shadow-lg transition">
                             <div class="grid md:grid-cols-2 gap-4 text-gray-800">
                                 <div>
@@ -55,39 +67,73 @@
                                     <p><strong>Seat Capacity:</strong> {{ $trip->seat_capacity }}</p>
                                     <p>
                                         <strong>Available Seats:</strong>
-                                        <span class="{{ $trip->seatsAvailable() > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
-                                            {{ $trip->seatsAvailable() }}
+                                        <span class="{{ $availableSeats > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                            {{ $availableSeats }}
                                         </span>
                                     </p>
                                 </div>
                             </div>
 
-                            {{-- Book Button or No Seats --}}
-                            <div class="mt-4 text-center">
-                                @if($trip->seatsAvailable() > 0)
-                                    <form action="{{ route('bookings.store') }}" method="POST">
-                                        @csrf
-                                        <input type="hidden" name="trip_id" value="{{ $trip->id }}">
-                                        <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded shadow">
-                                            Book This Trip
-                                        </button>
-                                    </form>
-                                @else
-                                    <p class="text-red-500 font-semibold">No seats available</p>
-                                @endif
-                            </div>
+                            {{-- Seat Selection and Booking Form --}}
+                            @if($availableSeats > 0)
+                            <form method="POST" action="{{ route('bookings.store') }}" class="mt-4 text-center">
+                                @csrf
+                                <input type="hidden" name="trip_id" value="{{ $trip->id }}">
+
+                                <label for="seat_number" class="block mb-2 font-semibold">Choose Your Seat:</label>
+                                <select name="seat_number" required class="mb-4 px-3 py-2 border border-gray-300 rounded">
+                                    @for ($i = 1; $i <= $totalSeats; $i++)
+                                        @php $seatLabel = 'S' . $i; @endphp
+                                        <option value="{{ $seatLabel }}" {{ in_array($seatLabel, $bookedSeats) ? 'disabled' : '' }}>
+                                            {{ $seatLabel }} {{ in_array($seatLabel, $bookedSeats) ? '(Taken)' : '' }}
+                                        </option>
+                                    @endfor
+                                </select>
+
+                                <button type="submit"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded shadow">
+                                    Book This Trip
+                                </button>
+                            </form>
+                            @else
+                                <p class="text-red-500 font-semibold text-center mt-4">No seats available</p>
+                            @endif
 
                             {{-- Error Message for this trip --}}
                             @if(session('error_trip_id') == $trip->id)
-                                <div class="bg-red-100 text-red-800 p-3 mt-3 rounded text-center font-semibold">
-                                    {{ session('error_message') }}
-                                </div>
+                            <div class="bg-red-100 text-red-800 p-3 mt-3 rounded text-center font-semibold">
+                                {{ session('error_message') }}
+                            </div>
                             @endif
                         </div>
                     @endforeach
                 </div>
             @else
                 <p class="text-center text-gray-500">No trips available at the moment.</p>
+            @endif
+
+            {{-- My Booked Seats --}}
+            @if(isset($bookings) && $bookings->count())
+                <div class="bg-white shadow-md sm:rounded-lg p-6 mt-8">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-700 text-center">Your Booked Seats</h3>
+
+                    <div class="space-y-4">
+                        @foreach($bookings as $booking)
+                            <div class="border border-gray-200 rounded p-4 shadow">
+                                <p><strong>Trip:</strong> {{ $booking->origin }} → {{ $booking->destination }}</p>
+                                <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($booking->travel_date)->format('M d, Y') }}</p>
+                                <p><strong>Time:</strong> {{ \Carbon\Carbon::parse($booking->travel_time)->format('h:i A') }}</p>
+                                <p><strong>Bus Name:</strong> {{ $booking->trip->bus_name ?? 'N/A' }}</p>
+                                <p><strong>Seat Number:</strong> {{ $booking->seat_number }}</p>
+                                <p><strong>Status:</strong>
+                                    <span class="{{ $booking->status === 'approved' ? 'text-green-600' : 'text-yellow-500' }}">
+                                        {{ ucfirst($booking->status) }}
+                                    </span>
+                                </p>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             @endif
 
         </div>

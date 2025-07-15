@@ -13,57 +13,86 @@ class BookingController extends Controller
      * Show the dashboard with available trips.
      */
     public function index()
-    {
-        $trips = Trip::orderBy('travel_date')->get(); // Load all trips
+{
+    try {
+        $trips = Trip::with([
+            'bookings' => function ($query) {
+                $query->where('status', 'approved');
+            }
+        ])
+        ->withCount([
+            'bookings as approved_bookings_count' => function ($query) {
+                $query->where('status', 'approved');
+            }
+        ])
+        ->orderBy('travel_date')
+        ->get();
+
         return view('dashboard', compact('trips'));
+    } catch (\Exception $e) {
+        \Log::error('Dashboard loading error: ' . $e->getMessage());
+        return view('dashboard')->with([
+            'trips' => collect(),
+            'error' => 'Failed to load trips: ' . $e->getMessage()
+        ]);
     }
+}
+
 
     /**
      * Handle booking submission.
      */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'trip_id' => 'required|exists:trips,id',
-        ]);
+  public function store(Request $request)
+{
+    $request->validate([
+        'trip_id' => 'required|exists:trips,id',
+        'seat_number' => 'required|string',
+    ]);
 
-        $trip = Trip::findOrFail($request->trip_id);
-        $userId = Auth::id();
+    $trip = Trip::findOrFail($request->trip_id);
+    $userId = Auth::id();
 
-        // Log booking attempt
-        \Log::info('Booking attempt by user ID: ' . $userId);
-        \Log::info('Trip info: ', $trip->toArray());
+    $alreadyBooked = Booking::where('user_id', $userId)
+        ->where('trip_id', $trip->id)
+        ->exists();
 
-        // Check if already booked
-        $alreadyBooked = Booking::where('user_id', $userId)
-            ->where('trip_id', $trip->id)
-            ->exists();
-
-        if ($alreadyBooked) {
-            return back()->withErrors(['trip_id' => 'You already booked this trip.']);
-        }
-
-        // Use seatsAvailable() method to check availability
-        if ($trip->seatsAvailable() < 1) {
-            return back()->withErrors(['trip_id' => 'Sorry, no more seats available for this trip.']);
-        }
-
-        // Create booking
-        Booking::create([
-            'user_id' => $userId,
-            'trip_id' => $trip->id,
-            'origin' => $trip->origin,
-            'destination' => $trip->destination,
-            'travel_date' => $trip->travel_date,
-            'travel_time' => $trip->travel_time,
-            'status' => 'pending',
-        ]);
-
-        // Log success
-        \Log::info('Booking created successfully for user ID: ' . $userId);
-
-        return redirect()->route('bookings.list')->with('success', 'Bus booked successfully!');
+    if ($alreadyBooked) {
+        return back()->withErrors(['trip_id' => 'You already booked this trip.']);
     }
+
+    $seatAlreadyTaken = Booking::where('trip_id', $trip->id)
+        ->where('seat_number', $request->seat_number)
+        ->where('status', 'approved')
+        ->exists();
+
+    if ($seatAlreadyTaken) {
+        return back()->withErrors(['seat_number' => 'That seat is already taken.']);
+    }
+
+    $approvedCount = Booking::where('trip_id', $trip->id)
+        ->where('status', 'approved')
+        ->count();
+
+    $seatsLeft = $trip->seat_capacity - $approvedCount;
+
+    if ($seatsLeft < 1) {
+        return back()->withErrors(['trip_id' => 'Sorry, no more seats available for this trip.']);
+    }
+
+    Booking::create([
+        'user_id' => $userId,
+        'trip_id' => $trip->id,
+        'origin' => $trip->origin,
+        'destination' => $trip->destination,
+        'travel_date' => $trip->travel_date,
+        'travel_time' => $trip->travel_time,
+        'seat_number' => $request->seat_number,
+        'status' => 'pending',
+    ]);
+
+    return redirect()->route('bookings.list')->with('success', 'Seat booked successfully!');
+}
+
 
     /**
      * Show list of the logged-in user's bookings.

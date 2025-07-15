@@ -5,53 +5,49 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\Auth\AdminRegisterController;
 use App\Http\Controllers\TripSearchController;
-use App\Http\Middleware\EnsureUserIsAdmin;
-use App\Http\Controllers\AdminTripController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
+use App\Http\Controllers\DashboardController;
 
-Route::middleware(['auth', 'is_admin'])->get('/admin/trips', [AdminTripController::class, 'showTrips'])->name('admin.trips');
+Route::middleware(['auth', 'verified'])->get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+// ✅ Welcome Page
+Route::get('/', fn() => view('welcome'));
 
-/*
-|--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
-Route::get('/', function () {
-    return view('welcome');
+// ✅ Admin Registration/Login (Not handled by Filament)
+Route::middleware('guest')->group(function () {
+    Route::get('/admin/register', [AdminRegisterController::class, 'showRegistrationForm'])->name('admin.register');
+    Route::post('/admin/register', [AdminRegisterController::class, 'register'])->name('admin.register.submit');
+    Route::get('/admin/login', [AdminLoginController::class, 'showLoginForm'])->name('admin.login');
+    Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit');
 });
 
-// Admin Registration & Login
-Route::get('/admin/register', [AdminRegisterController::class, 'showRegistrationForm'])->name('admin.register');
-Route::post('/admin/register', [AdminRegisterController::class, 'register'])->name('admin.register.submit');
-Route::get('/admin/login', [AdminLoginController::class, 'showLoginForm'])->name('admin.login');
-Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit');
+// ✅ Email Verification (for users only)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/email/verify', fn() => view('auth.verify-email'))->name('verification.notice');
 
-/*
-|--------------------------------------------------------------------------
-| Authenticated Admin Routes
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+
+        return in_array($request->user()->role, ['admin', 'super_admin'])
+            ? redirect('/admin')
+            : redirect()->route('dashboard');
+    })->middleware(['signed'])->name('verification.verify');
+
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', 'Verification link sent!');
+    })->name('verification.send');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Authenticated Regular User Routes
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
-    // other routes...
-});
-Route::middleware(['auth', 'is_admin'])->get('/admin/trips', [AdminTripController::class, 'showTrips'])->name('admin.trips');
-
+// ✅ User Routes (Only if email verified)
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [BookingController::class, 'index'])->name('dashboard');
     Route::get('/search-trips', [TripSearchController::class, 'showForm'])->name('trips.search');
+    Route::get('/search-trips/results', [TripSearchController::class, 'search'])->name('trips.search.results');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::delete('/bookings/{id}', [BookingController::class, 'destroy'])->name('bookings.destroy');
-    Route::get('/search-trips/results', [TripSearchController::class, 'search'])->name('trips.search.results');
     Route::get('/my-bookings', [BookingController::class, 'list'])->name('bookings.list');
+    Route::middleware(['auth', 'verified'])->post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+
+    
 });
