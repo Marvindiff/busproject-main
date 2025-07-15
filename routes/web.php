@@ -8,9 +8,11 @@ use App\Http\Controllers\TripSearchController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PayPalController;
 
 Route::middleware(['auth', 'verified'])->get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-// ✅ Welcome Page
+Route::post('/bookings', [BookingController::class, 'store'])->middleware(['auth', 'verified'])->name('bookings.store');
+
 Route::get('/', fn() => view('welcome'));
 
 // ✅ Admin Registration/Login (Not handled by Filament)
@@ -51,3 +53,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     
 });
+
+
+
+Route::get('/pay/{trip}', [PayPalController::class, 'pay'])->name('paypal.pay');
+Route::get('/paypal/success', [PayPalController::class, 'success'])->name('paypal.success');
+Route::get('/paypal/cancel', [PayPalController::class, 'cancel'])->name('paypal.cancel');
+

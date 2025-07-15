@@ -9,12 +9,14 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('bookings', function (Blueprint $table) {
-        $table->string('seat_number')->after('trip_id');
-        });
-    }
+   public function up()
+{
+    Schema::table('bookings', function (Blueprint $table) {
+        $table->string('payment_method')->nullable(); // GCash, Bank, etc.
+        $table->string('payment_proof')->nullable();
+        $table->enum('payment_status', ['pending', 'verified', 'rejected'])->default('pending');
+    });
+}
 
     /**
      * Reverse the migrations.

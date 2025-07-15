@@ -20,6 +20,8 @@ class Booking extends Model
         'travel_time',
          'status',
          'seat_number',
+         'payment_method',      // ✅ Add this
+         'payment_status', 
     ];
 
     public function user()

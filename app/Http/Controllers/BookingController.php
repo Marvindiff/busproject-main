@@ -47,6 +47,7 @@ class BookingController extends Controller
     $request->validate([
         'trip_id' => 'required|exists:trips,id',
         'seat_number' => 'required|string',
+        'payment_method' => 'required|in:GCash,BankTransfer,PayMaya,ShopeePay,GrabPay,Coins.ph',
     ]);
 
     $trip = Trip::findOrFail($request->trip_id);
@@ -88,9 +89,11 @@ class BookingController extends Controller
         'travel_time' => $trip->travel_time,
         'seat_number' => $request->seat_number,
         'status' => 'pending',
+        'payment_method' => $request->payment_method,
+        'payment_status' => 'pending',
     ]);
 
-    return redirect()->route('bookings.list')->with('success', 'Seat booked successfully!');
+     return redirect()->route('bookings.list')->with('success', 'Booking submitted! Waiting for admin verification.');
 }
 
 

@@ -17,12 +17,6 @@
                 </div>
             @endif
 
-            @if (session('status') === 'verification-link-sent')
-                <div class="text-green-600 text-center font-semibold mb-4">
-                    ✅ Email verified successfully!
-                </div>
-            @endif
-
             {{-- Search Trips --}}
             <div class="bg-white shadow-md sm:rounded-lg p-6 text-center">
                 <h3 class="text-2xl font-bold mb-4 text-gray-700">Ready to travel?</h3>
@@ -49,7 +43,6 @@
                     @foreach($trips as $trip)
                         @php
                             $availableSeats = $trip->seat_capacity - $trip->approved_bookings_count;
-                            $totalSeats = $trip->seat_capacity;
                             $bookedSeats = $trip->bookedSeatNumbers();
                         @endphp
 
@@ -74,36 +67,58 @@
                                 </div>
                             </div>
 
-                            {{-- Seat Selection and Booking Form --}}
+                            {{-- PayPal Button or Free Trip Message --}}
+<div class="mt-4 text-center">
+    @if($trip->price > 0)
+        <form action="{{ route('paypal.pay', $trip->id) }}" method="GET">
+            <button type="submit" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                Pay with PayPal
+            </button>
+        </form>
+    @else
+        <p class="text-green-600 font-semibold">Free trip – no payment needed.</p>
+    @endif
+</div>
+
+
+                            {{-- Booking Form --}}
                             @if($availableSeats > 0)
-                            <form method="POST" action="{{ route('bookings.store') }}" class="mt-4 text-center">
-                                @csrf
-                                <input type="hidden" name="trip_id" value="{{ $trip->id }}">
+                                <form method="POST" action="{{ route('bookings.store') }}" enctype="multipart/form-data" class="mt-6 text-center">
+                                    @csrf
+                                    <input type="hidden" name="trip_id" value="{{ $trip->id }}">
 
-                                <label for="seat_number" class="block mb-2 font-semibold">Choose Your Seat:</label>
-                                <select name="seat_number" required class="mb-4 px-3 py-2 border border-gray-300 rounded">
-                                    @for ($i = 1; $i <= $totalSeats; $i++)
-                                        @php $seatLabel = 'S' . $i; @endphp
-                                        <option value="{{ $seatLabel }}" {{ in_array($seatLabel, $bookedSeats) ? 'disabled' : '' }}>
-                                            {{ $seatLabel }} {{ in_array($seatLabel, $bookedSeats) ? '(Taken)' : '' }}
-                                        </option>
-                                    @endfor
-                                </select>
+                                    {{-- Seat Selection --}}
+                                    <label for="seat_number" class="block font-semibold mb-2">Choose Your Seat:</label>
+                                    <select name="seat_number" required class="mb-3 px-3 py-2 border border-gray-300 rounded">
+                                        @for ($i = 1; $i <= $trip->seat_capacity; $i++)
+                                            @php $seat = 'S' . $i; @endphp
+                                            <option value="{{ $seat }}" {{ in_array($seat, $bookedSeats) ? 'disabled' : '' }}>
+                                                {{ $seat }} {{ in_array($seat, $bookedSeats) ? '(Taken)' : '' }}
+                                            </option>
+                                        @endfor
+                                    </select>
 
-                                <button type="submit"
-                                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded shadow">
-                                    Book This Trip
-                                </button>
-                            </form>
+                                    {{-- Payment Method --}}
+                                    <div class="mb-4 text-left">
+                                        <label class="block font-semibold mb-2">Other Payment Method:</label>
+                                        <div class="space-y-2">
+                                            <label><input type="radio" name="payment_method" value="GCash" required> GCash</label><br>
+                                            <label><input type="radio" name="payment_method" value="BankTransfer"> Bank Transfer</label><br>
+                                            <label><input type="radio" name="payment_method" value="PayMaya"> PayMaya</label><br>
+                                            <label><input type="radio" name="payment_method" value="ShopeePay"> ShopeePay</label><br>
+                                            <label><input type="radio" name="payment_method" value="GrabPay"> GrabPay</label><br>
+                                            <label><input type="radio" name="payment_method" value="Coins.ph"> Coins.ph</label>
+                                        </div>
+                                    </div>
+
+                                    {{-- Book Button --}}
+                                    <button type="submit"
+                                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded shadow">
+                                        Book This Trip
+                                    </button>
+                                </form>
                             @else
                                 <p class="text-red-500 font-semibold text-center mt-4">No seats available</p>
-                            @endif
-
-                            {{-- Error Message for this trip --}}
-                            @if(session('error_trip_id') == $trip->id)
-                            <div class="bg-red-100 text-red-800 p-3 mt-3 rounded text-center font-semibold">
-                                {{ session('error_message') }}
-                            </div>
                             @endif
                         </div>
                     @endforeach
@@ -111,31 +126,6 @@
             @else
                 <p class="text-center text-gray-500">No trips available at the moment.</p>
             @endif
-
-            {{-- My Booked Seats --}}
-            @if(isset($bookings) && $bookings->count())
-                <div class="bg-white shadow-md sm:rounded-lg p-6 mt-8">
-                    <h3 class="text-2xl font-bold mb-4 text-gray-700 text-center">Your Booked Seats</h3>
-
-                    <div class="space-y-4">
-                        @foreach($bookings as $booking)
-                            <div class="border border-gray-200 rounded p-4 shadow">
-                                <p><strong>Trip:</strong> {{ $booking->origin }} → {{ $booking->destination }}</p>
-                                <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($booking->travel_date)->format('M d, Y') }}</p>
-                                <p><strong>Time:</strong> {{ \Carbon\Carbon::parse($booking->travel_time)->format('h:i A') }}</p>
-                                <p><strong>Bus Name:</strong> {{ $booking->trip->bus_name ?? 'N/A' }}</p>
-                                <p><strong>Seat Number:</strong> {{ $booking->seat_number }}</p>
-                                <p><strong>Status:</strong>
-                                    <span class="{{ $booking->status === 'approved' ? 'text-green-600' : 'text-yellow-500' }}">
-                                        {{ ucfirst($booking->status) }}
-                                    </span>
-                                </p>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-
         </div>
     </div>
 </x-app-layout>
