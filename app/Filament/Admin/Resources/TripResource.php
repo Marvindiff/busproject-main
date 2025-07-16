@@ -73,7 +73,6 @@ class TripResource extends Resource
     public static function getPages(): array
     {
         return [
-            'view' => Pages\ViewTrip::route('/{record}'),
             'index' => Pages\ListTrips::route('/'),
             'create' => Pages\CreateTrip::route('/create'),
             'edit' => Pages\EditTrip::route('/{record}/edit'),
