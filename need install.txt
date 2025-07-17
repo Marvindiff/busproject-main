@@ -1,0 +1,37 @@
+- Composer install
+composer require laravel/jetstream
+composer require laravel/fortify
+composer require laravel/sanctum
+composer require filament/filament
+
+
+-npm install
+-npm run build
+-npm rub dev
+-php artisan migrate
+
+composer require spatie/laravel-permission
+composer require anhskohbo/no-captcha
+composer require pragmarx/google2fa
+
+composer require paypal/rest-api-sdk-php
+composer require kirschbaum-development/eloquent-power-joins
+composer require anourvalar/eloquent-serialize
+composer require blade-ui-kit/blade-icons
+composer require blade-ui-kit/blade-heroicons
+composer require ryangjchandler/blade-capture-directive
+composer require league/csv
+composer require openspout/openspout
+composer require --dev barryvdh/laravel-ide-helper
+composer require --dev nunomaduro/collision
+composer require --dev phpunit/phpunit
+composer require nesbot/carbon
+composer require guzzlehttp/guzzle
+composer require fruitcake/php-cors
+
+optional:
+composer require laravel/pint --dev
+composer require laravel/pail --dev
+
+make sure to run this:
+npm run dev
