@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\Trip;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class BookingController extends Controller
 {
@@ -14,29 +15,21 @@ class BookingController extends Controller
      */
     public function index()
 {
-    try {
-        $trips = Trip::with([
-            'bookings' => function ($query) {
-                $query->where('status', 'approved');
-            }
-        ])
-        ->withCount([
-            'bookings as approved_bookings_count' => function ($query) {
-                $query->where('status', 'approved');
-            }
-        ])
-        ->orderBy('travel_date')
-        ->get();
+    $now = Carbon::now();
 
-        return view('dashboard', compact('trips'));
-    } catch (\Exception $e) {
-        \Log::error('Dashboard loading error: ' . $e->getMessage());
-        return view('dashboard')->with([
-            'trips' => collect(),
-            'error' => 'Failed to load trips: ' . $e->getMessage()
-        ]);
-    }
+    $trips = Trip::whereDate('travel_date', $now->toDateString())
+                ->whereTime('travel_time', '>=', $now->toTimeString())
+                ->orderBy('travel_time')
+                ->withCount(['bookings as approved_bookings_count' => function ($query) {
+                    $query->where('status', 'approved');
+                }])
+                ->get();
+
+    return view('dashboard', compact('trips'));
 }
+
+
+
 
 
     /**
@@ -70,9 +63,7 @@ class BookingController extends Controller
         return back()->withErrors(['seat_number' => 'That seat is already taken.']);
     }
 
-    $approvedCount = Booking::where('trip_id', $trip->id)
-        ->where('status', 'approved')
-        ->count();
+   $approvedCount = $trip->bookings()->where('status', 'approved')->count();
 
     $seatsLeft = $trip->seat_capacity - $approvedCount;
 
@@ -119,4 +110,6 @@ class BookingController extends Controller
 
         return redirect()->route('bookings.list')->with('success', 'Booking cancelled.');
     }
+
+    
 }

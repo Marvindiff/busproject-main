@@ -45,8 +45,19 @@ public function bookedSeatNumbers()
 }
     public function getAvailableSeatsAttribute()
 {
-    $bookedSeats = $this->bookings()->where('status', 'approved')->count();
-    return $this->seat_capacity - $bookedSeats;
+    return $this->seat_capacity - $this->approvedBookings()->count();
 }
+
+
+public function scopeTodayAvailable($query)
+{
+    $now = \Carbon\Carbon::now();
+
+    return $query->whereDate('travel_date', $now->toDateString())
+                 ->whereTime('travel_time', '>=', $now->toTimeString());
+}
+
+
+
 
 }

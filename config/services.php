@@ -39,6 +39,11 @@ return [
     'client_secret' => env('PAYPAL_CLIENT_SECRET'),
     'sandbox' => env('PAYPAL_SANDBOX', true),
 ],
+'nocaptcha' => [
+    'sitekey' => env('NOCAPTCHA_SITEKEY'),
+    'secret' => env('NOCAPTCHA_SECRET'),
+],
+
 
 
 ];
